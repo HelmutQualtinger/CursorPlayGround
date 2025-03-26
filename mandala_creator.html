@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Mandala Creator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .header p {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #b0b0b0;
+        }
+        
+        .canvas-container {
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        #mandalaCanvas {
+            background-color: #222222;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+            cursor: crosshair;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 80%;
+            max-width: 800px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            margin: 0 20px 10px 20px;
+        }
+        
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            width: 250px;
+            margin-bottom: 15px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .slider-label span {
+            font-size: 14px;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #444444;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #ff6347;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #ff6347;
+            cursor: pointer;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        
+        button {
+            background-color: #333333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            margin: 0 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #444444;
+        }
+        
+        .palette-preview {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        .color-sample {
+            width: 20px;
+            height: 20px;
+            margin: 0 3px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Interactive Mandala Creator</h1>
+            <p>Draw with your mouse to create a mandala design</p>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="mandalaCanvas"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Symmetry Axes</span>
+                        <span id="symmetryValue">8</span>
+                    </div>
+                    <input type="range" min="3" max="24" value="8" class="slider" id="symmetrySlider">
+                </div>
+                
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Line Width</span>
+                        <span id="lineWidthValue">2</span>
+                    </div>
+                    <input type="range" min="1" max="10" value="2" class="slider" id="lineWidthSlider">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>Rotation</span>
+                        <span id="rotationValue">0°</span>
+                    </div>
+                    <input type="range" min="0" max="360" value="0" class="slider" id="rotationSlider">
+                </div>
+                
+                <div class="button-container">
+                    <button id="paletteButton">Rainbow</button>
+                    <div class="palette-preview" id="palettePreview"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-container">
+            <button id="resetButton">Reset</button>
+            <button id="saveButton">Save Mandala</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Canvas setup
+            const canvas = document.getElementById('mandalaCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size based on window
+            const canvasSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.6);
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            
+            // Center point of the canvas
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = canvas.width / 2;
+            
+            // Controls
+            const symmetrySlider = document.getElementById('symmetrySlider');
+            const lineWidthSlider = document.getElementById('lineWidthSlider');
+            const rotationSlider = document.getElementById('rotationSlider');
+            const resetButton = document.getElementById('resetButton');
+            const saveButton = document.getElementById('saveButton');
+            const paletteButton = document.getElementById('paletteButton');
+            
+            // Value displays
+            const symmetryValue = document.getElementById('symmetryValue');
+            const lineWidthValue = document.getElementById('lineWidthValue');
+            const rotationValue = document.getElementById('rotationValue');
+            const palettePreview = document.getElementById('palettePreview');
+            
+            // State variables
+            let isDrawing = false;
+            let currentSegment = [];
+            let segments = [];
+            let segmentColors = [];
+            
+            // Settings
+            let symmetry = parseInt(symmetrySlider.value);
+            let lineWidth = parseInt(lineWidthSlider.value);
+            let rotation = parseInt(rotationSlider.value) * (Math.PI / 180); // Convert to radians
+            
+            // Color palettes
+            const palettes = {
+                'Fire': ['#ff4500', '#ff8c00', '#ffd700', '#ff0000'],
+                'Ocean': ['#00008b', '#0000cd', '#00bfff', '#87ceeb'],
+                'Forest': ['#006400', '#228b22', '#32cd32', '#90ee90'],
+                'Sunset': ['#ff4500', '#ff6347', '#ff7f50', '#ffa07a'],
+                'Rainbow': ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#4b0082', '#9400d3'],
+                'Monochrome': ['#ffffff', '#cccccc', '#999999', '#666666', '#333333']
+            };
+            let currentPalette = 'Rainbow';
+            
+            // Update palette preview
+            function updatePalettePreview() {
+                palettePreview.innerHTML = '';
+                palettes[currentPalette].forEach(color => {
+                    const sample = document.createElement('div');
+                    sample.className = 'color-sample';
+                    sample.style.backgroundColor = color;
+                    palettePreview.appendChild(sample);
+                });
+            }
+            
+            // Initialize palette preview
+            updatePalettePreview();
+            
+            // Drawing functions
+            function clearCanvas() {
+                ctx.fillStyle = '#222222';
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw symmetry guide
+                drawSymmetryGuides();
+            }
+            
+            function drawSymmetryGuides() {
+                // Draw boundary circle
+                ctx.strokeStyle = '#444444';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius - 1, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Draw symmetry lines
+                for (let i = 0; i < symmetry; i++) {
+                    const angle = rotation + i * (Math.PI * 2) / symmetry;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    const endX = centerX + radius * Math.cos(angle);
+                    const endY = centerY + radius * Math.sin(angle);
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                }
+            }
+            
+            function drawMandala() {
+                clearCanvas();
+                
+                // Draw all saved segments
+                segments.forEach((segment, index) => {
+                    drawSymmetricalSegment(segment, segmentColors[index]);
+                });
+                
+                // Draw current segment if we're drawing
+                if (isDrawing && currentSegment.length > 1) {
+                    const colorIndex = segments.length % palettes[currentPalette].length;
+                    const color = palettes[currentPalette][colorIndex];
+                    drawSymmetricalSegment(currentSegment, color);
+                }
+            }
+            
+            function drawSymmetricalSegment(segment, color) {
+                if (!segment || segment.length < 2) return;
+                
+                for (let i = 0; i < symmetry; i++) {
+                    const angle = rotation + i * (Math.PI * 2) / symmetry;
+                    
+                    // Draw segment
+                    ctx.beginPath();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    
+                    // Transform and draw each point
+                    for (let j = 0; j < segment.length; j++) {
+                        const [x, y] = segment[j];
+                        
+                        // Rotate point
+                        const rotatedX = x * Math.cos(angle) - y * Math.sin(angle);
+                        const rotatedY = x * Math.sin(angle) + y * Math.cos(angle);
+                        
+                        // Convert to canvas coordinates
+                        const canvasX = centerX + rotatedX;
+                        const canvasY = centerY + rotatedY;
+                        
+                        if (j === 0) {
+                            ctx.moveTo(canvasX, canvasY);
+                        } else {
+                            ctx.lineTo(canvasX, canvasY);
+                        }
+                    }
+                    
+                    ctx.stroke();
+                }
+            }
+            
+            // Event handlers
+            canvas.addEventListener('mousedown', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - centerX;
+                const y = e.clientY - rect.top - centerY;
+                
+                // Only start drawing if within the circle
+                const distanceFromCenter = Math.sqrt(x * x + y * y);
+                if (distanceFromCenter <= radius) {
+                    isDrawing = true;
+                    currentSegment = [[x, y]];
+                }
+            });
+            
+            canvas.addEventListener('mousemove', function(e) {
+                if (!isDrawing) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left - centerX;
+                const y = e.clientY - rect.top - centerY;
+                
+                // Only draw if within the circle
+                const distanceFromCenter = Math.sqrt(x * x + y * y);
+                if (distanceFromCenter <= radius) {
+                    currentSegment.push([x, y]);
+                    drawMandala();
+                }
+            });
+            
+            canvas.addEventListener('mouseup', function() {
+                if (isDrawing && currentSegment.length > 1) {
+                    const colorIndex = segments.length % palettes[currentPalette].length;
+                    const color = palettes[currentPalette][colorIndex];
+                    
+                    segments.push([...currentSegment]);
+                    segmentColors.push(color);
+                }
+                isDrawing = false;
+                currentSegment = [];
+            });
+            
+            canvas.addEventListener('mouseleave', function() {
+                if (isDrawing && currentSegment.length > 1) {
+                    const colorIndex = segments.length % palettes[currentPalette].length;
+                    const color = palettes[currentPalette][colorIndex];
+                    
+                    segments.push([...currentSegment]);
+                    segmentColors.push(color);
+                }
+                isDrawing = false;
+                currentSegment = [];
+            });
+            
+            // Control handlers
+            symmetrySlider.addEventListener('input', function() {
+                symmetry = parseInt(this.value);
+                symmetryValue.textContent = symmetry;
+                drawMandala();
+            });
+            
+            lineWidthSlider.addEventListener('input', function() {
+                lineWidth = parseInt(this.value);
+                lineWidthValue.textContent = lineWidth;
+                drawMandala();
+            });
+            
+            rotationSlider.addEventListener('input', function() {
+                const degrees = parseInt(this.value);
+                rotation = degrees * (Math.PI / 180); // Convert to radians
+                rotationValue.textContent = degrees + '°';
+                drawMandala();
+            });
+            
+            resetButton.addEventListener('click', function() {
+                segments = [];
+                segmentColors = [];
+                drawMandala();
+            });
+            
+            saveButton.addEventListener('click', function() {
+                // Create a temporary canvas with white background for saving
+                const saveCanvas = document.createElement('canvas');
+                saveCanvas.width = canvas.width;
+                saveCanvas.height = canvas.height;
+                const saveCtx = saveCanvas.getContext('2d');
+                
+                // Draw white background
+                saveCtx.fillStyle = '#FFFFFF';
+                saveCtx.fillRect(0, 0, saveCanvas.width, saveCanvas.height);
+                
+                // Draw mandala without guides
+                saveCtx.drawImage(canvas, 0, 0);
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `mandala_${symmetry}_axes.png`;
+                link.href = saveCanvas.toDataURL('image/png');
+                link.click();
+            });
+            
+            paletteButton.addEventListener('click', function() {
+                const paletteNames = Object.keys(palettes);
+                const currentIndex = paletteNames.indexOf(currentPalette);
+                const nextIndex = (currentIndex + 1) % paletteNames.length;
+                currentPalette = paletteNames[nextIndex];
+                
+                // Update button text
+                paletteButton.textContent = currentPalette;
+                
+                // Update palette preview
+                updatePalettePreview();
+                
+                // Update colors for existing segments
+                for (let i = 0; i < segmentColors.length; i++) {
+                    const colorIndex = i % palettes[currentPalette].length;
+                    segmentColors[i] = palettes[currentPalette][colorIndex];
+                }
+                
+                drawMandala();
+            });
+            
+            // Window resize handler
+            window.addEventListener('resize', function() {
+                const newCanvasSize = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.6);
+                
+                // Save the current drawing
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height;
+                tempCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                
+                // Resize the canvas
+                canvas.width = newCanvasSize;
+                canvas.height = newCanvasSize;
+                centerX = canvas.width / 2;
+                centerY = canvas.height / 2;
+                radius = canvas.width / 2;
+                
+                // Redraw the mandala
+                drawMandala();
+            });
+            
+            // Initialize
+            clearCanvas();
+        });
+    </script>
+</body>
+</html> 
