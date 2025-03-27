@@ -6,6 +6,7 @@ import math
 
 
 # Constants
+
 WIDTH, HEIGHT = 10, 10  # Size of the window
 BALL_RADIUS = 0.3
 TRIANGLE_SIZE = 6.0  # Size of the triangle
